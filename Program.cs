@@ -26,7 +26,6 @@ while (true)
     Console.ReadKey();
 }
 
-
 static void PrintCommits()
 {
     foreach (var commit in GitCliService.GetCommits())

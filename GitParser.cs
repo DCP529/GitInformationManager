@@ -38,13 +38,13 @@ public static partial class GitParser
         }
     }
 
-    public static IEnumerable<FileBlameLine> ParseBlame(string output)
+    private static IEnumerable<FileBlameLine> ParseBlameInternal(string output)
     {
         var lines = output.Split('\n');
-
-        string? sha = null, author = null;
-
+        string? sha = null;
+        string? author = null;
         DateTime date = default;
+
         var lineNumber = 0;
 
         foreach (var line in lines)
@@ -59,15 +59,17 @@ public static partial class GitParser
                     yield return new FileBlameLine(lineNumber, sha, author, date, content);
                 }
 
+                sha = null;
+                author = null;
+                date = default;
                 continue;
             }
 
-            if (line.Length >= 40 && sha == null)
+            if (line.Length >= 40 && sha is null)
             {
                 sha = line[..40];
             }
-
-            if (line.StartsWith("author "))
+            else if (line.StartsWith("author "))
             {
                 author = line[7..];
             }
@@ -76,53 +78,15 @@ public static partial class GitParser
                 if (long.TryParse(line[12..], out var unix))
                     date = DateTimeOffset.FromUnixTimeSeconds(unix).LocalDateTime;
             }
-
-            if (string.IsNullOrEmpty(line))
-            {
-                sha = null;
-                author = null;
-                date = default;
-            }
         }
     }
 
-    public static IReadOnlyDictionary<int, (string sha, string author)> ParseBlameMap(string blameOutput)
-    {
-        var result = new Dictionary<int, (string sha, string author)>();
-        var lines = blameOutput.Split('\n');
-        var currentLine = 0;
-        string? sha = null, author = null;
+    public static IEnumerable<FileBlameLine> ParseBlame(string output) =>
+        ParseBlameInternal(output);
 
-        foreach (var line in lines)
-        {
-            if (line.Length >= 40 && sha == null)
-            {
-                sha = line[..40];
-                continue;
-            }
-
-            if (line.StartsWith("author "))
-            {
-                author = line[7..];
-                continue;
-            }
-
-            if (line.StartsWith('\t'))
-            {
-                currentLine++;
-                
-                if (sha != null && author != null)
-                {
-                    result[currentLine] = (sha, author);
-                }
-
-                sha = null;
-                author = null;
-            }
-        }
-
-        return result;
-    }
+    public static IReadOnlyDictionary<int, (string sha, string author)> ParseBlameMap(string output) =>
+        ParseBlameInternal(output)
+            .ToDictionary(x => x.LineNumber, x => (x.CommitSha, x.Author));
 
     public static IReadOnlyDictionary<string, List<(int lineNumber, string text)>> ParseDiff(string diff)
     {

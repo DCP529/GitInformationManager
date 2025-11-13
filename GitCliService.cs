@@ -63,7 +63,7 @@ public class GitCliService
             }
 
             var blameMap = GetParentCommitBlame(commitSha, cleanPath);
-            if (blameMap is null || blameMap.Count == 0)
+            if (blameMap.Count == 0)
                 continue;
 
             foreach (var (lineNumber, text) in deletedLines)
@@ -116,7 +116,7 @@ public class GitCliService
         catch (InvalidOperationException ex) when (ex.Message.Contains("no such path"))
         {
             Debug.WriteLine($"{cleanPath} отсутствует в предыдущем коммите (возможно, был удалён целиком)");
-            return null;
+            return new Dictionary<int, (string sha, string author)>();
         }
     }
 
