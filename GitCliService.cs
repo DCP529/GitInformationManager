@@ -48,7 +48,10 @@ public class GitCliService
 
     public static IEnumerable<DeletedLineInfo> GetDeletedLinesWithAuthors(string commitSha, string? fileName = null)
     {
+        var commits = GetCommits().ToDictionary(c => c.Sha, c => c);
         var deletedBy = GetDeletedBy(commitSha);
+        var commitInfo = commits.GetValueOrDefault(commitSha);
+
         var fileDiffs = GetFileDiffs(commitSha, fileName);
 
         foreach (var (filePath, deletedLines) in fileDiffs)
@@ -70,7 +73,15 @@ public class GitCliService
             {
                 if (blameMap.TryGetValue(lineNumber, out var info))
                 {
-                    yield return new DeletedLineInfo(lineNumber, deletedBy, info.author, text);
+                    yield return new DeletedLineInfo(
+                        lineNumber,
+                        text,
+                        deletedBy,
+                        info.author,
+                        cleanPath,
+                        commitSha,
+                        commitInfo?.Date ?? DateTime.MinValue
+                    );
                 }
             }
         }

@@ -10,8 +10,8 @@ while (true)
     Console.WriteLine("5. Удалённые строки Program.cs");
     Console.Write("> ");
 
-    var choice = Console.ReadLine();
 
+    var choice = Console.ReadLine();
     switch (choice)
     {
         case "1": PrintCommits(); break;
@@ -52,12 +52,42 @@ static void PrintFileBlame(string relativePath)
 
 static void PrintDeletedLines(string commitSha, string relativePath)
 {
-    foreach (var line in GitCliService.GetDeletedLinesWithAuthors(commitSha, relativePath))
+    var lines = GitCliService.GetDeletedLinesWithAuthors(commitSha, relativePath).ToList();
+
+    if (lines.Count == 0)
     {
-        Console.WriteLine($"{line.LineNumber}: {line.Text}");
-        Console.WriteLine($"  deleted by:    {line.DeletedBy}");
-        Console.WriteLine($"  originally by: {line.OriginalAuthor}");
+        Console.WriteLine("Нет удалённых строк.");
+        return;
+    }
+
+    var commit = GitCliService.GetCommits().FirstOrDefault(c => c.Sha == commitSha);
+    if (commit != null)
+    {
+        Console.ForegroundColor = ConsoleColor.Cyan;
+        Console.WriteLine($"\nУдалённые строки в {relativePath}");
+        Console.WriteLine($"Коммит: {commit.Sha}");
+        Console.WriteLine($"{commit.Date:g} — {commit.Author}: {commit.Message}");
+        Console.ResetColor();
         Console.WriteLine();
     }
+
+    foreach (var line in lines)
+    {
+        Console.ForegroundColor = ConsoleColor.Yellow;
+        Console.WriteLine($"Файл: {line.FilePath}");
+        Console.ResetColor();
+
+        Console.ForegroundColor = ConsoleColor.Red;
+        Console.WriteLine($"- {line.LineNumber,3}: {line.Text}");
+        Console.ResetColor();
+
+        Console.WriteLine($"Удалил: {line.DeletedBy}");
+        Console.WriteLine($"Автор:  {line.OriginalAuthor}");
+        Console.WriteLine($"Дата коммита: {line.CommitDate:g}");
+        Console.WriteLine(new string('-', 60));
+    }
+
+    Console.WriteLine($"\nВсего удалённых строк: {lines.Count}");
 }
+
 

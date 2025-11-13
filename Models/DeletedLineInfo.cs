@@ -2,7 +2,10 @@
 
 public record DeletedLineInfo(
     int LineNumber,
+    string Text,
     string DeletedBy,
     string OriginalAuthor,
-    string Text
+    string FilePath,
+    string CommitSha,
+    DateTime CommitDate
 );
